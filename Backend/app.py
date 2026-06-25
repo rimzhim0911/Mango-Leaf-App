@@ -22,10 +22,9 @@ CORS(
 def home():
     return "Mango Disease Backend Running Successfully"
 
-# Load model
-model = tf.saved_model.load("saved_model_tf")
+from tensorflow.keras.models import load_model
 
-predict_fn = model.signatures["serving_default"]
+model = load_model("mango_leaf_disease_model.keras")
 
 
 # Classes
@@ -55,12 +54,10 @@ def predict():
     img_array = np.array(img) / 255.0
     img_array = np.expand_dims(img_array.astype(np.float32), axis=0)
 
-    prediction = predict_fn(tf.constant(img_array))
+    prediction = model.predict(img_array, verbose=0)
 
-    output = list(prediction.values())[0].numpy()
-
-    predicted_index = np.argmax(output)
-    confidence = float(np.max(output) * 100)
+    predicted_index = np.argmax(prediction)
+    confidence = float(np.max(prediction) * 100)
 
     return jsonify({
         "disease": classes[predicted_index],

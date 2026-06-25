@@ -44,9 +44,28 @@ classes = {
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+
+    img = Image.open(file).convert("RGB")
+    img = img.resize((224, 224))
+
+    img_array = np.array(img, dtype=np.float32)
+    img_array = img_array / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+
+    prediction = model.predict(img_array)
+
+    predicted_index = np.argmax(prediction)
+    confidence = float(np.max(prediction) * 100)
+
+    disease = classes[predicted_index]
+
     return jsonify({
-        "disease": "Healthy",
-        "confidence": 99.9
+        "disease": disease,
+        "confidence": round(confidence, 2)
     })
 
 import os

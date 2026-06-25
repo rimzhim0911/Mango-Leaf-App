@@ -6,8 +6,17 @@ import numpy as np
 from PIL import Image
 
 app = Flask(__name__)
-CORS(app)
 
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://mango-leaf-app.vercel.app"
+            ]
+        }
+    }
+)
 
 @app.route("/")
 def home():

@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import traceback
 
 import tensorflow as tf
 import numpy as np
@@ -43,27 +44,36 @@ classes = {
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    try:
+        print("Prediction API Hit")
 
-    print("Prediction API Hit")
+        print("Files:", request.files)
 
-    file = request.files["image"]
+        file = request.files["image"]
 
-    img = Image.open(file).convert("RGB")
-    img = img.resize((224, 224))
+        img = Image.open(file).convert("RGB")
+        img = img.resize((224, 224))
 
-    img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array.astype(np.float32), axis=0)
+        img_array = np.array(img, dtype=np.float32) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-    prediction = model.predict(img_array, verbose=0)
+        print("Shape:", img_array.shape)
 
-    predicted_index = np.argmax(prediction)
-    confidence = float(np.max(prediction) * 100)
+        prediction = model.predict(img_array, verbose=0)
 
-    return jsonify({
-        "disease": classes[predicted_index],
-        "confidence": round(confidence, 2)
-    })
+        print("Prediction:", prediction)
 
+        predicted_index = int(np.argmax(prediction))
+        confidence = float(np.max(prediction) * 100)
+
+        return jsonify({
+            "disease": classes[predicted_index],
+            "confidence": round(confidence, 2)
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 import os
 

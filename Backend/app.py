@@ -52,19 +52,24 @@ def predict():
     img = Image.open(file).convert("RGB")
     img = img.resize((224, 224))
 
-    img_array = np.array(img, dtype=np.float32)
-    img_array = img_array / 255.0
+    img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    prediction = model.predict(img_array)
+    prediction = model.predict(img_array, verbose=0)
 
-    predicted_index = np.argmax(prediction)
+    print("=" * 60)
+    print("Prediction Array:", prediction.tolist())
+
+    predicted_index = int(np.argmax(prediction))
     confidence = float(np.max(prediction) * 100)
 
-    disease = classes[predicted_index]
+    print("Predicted Index:", predicted_index)
+    print("Disease:", classes[predicted_index])
+    print("Confidence:", confidence)
+    print("=" * 60)
 
     return jsonify({
-        "disease": disease,
+        "disease": classes[predicted_index],
         "confidence": round(confidence, 2)
     })
 

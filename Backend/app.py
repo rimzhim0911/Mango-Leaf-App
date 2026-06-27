@@ -1,80 +1,93 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import traceback
-
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import json
+import os
+import traceback
 
 app = Flask(__name__)
 
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://mango-leaf-app.vercel.app"
-            ]
-        }
+# Allow local React app + deployed frontend
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "http://localhost:5173",
+            "https://mango-leaf-app.vercel.app"
+        ]
     }
+})
+
+# ---------------- LOAD MODEL ---------------- #
+
+model = tf.keras.models.load_model(
+    "mango_leaf_disease_model.keras",
+    compile=False
 )
+
+# Load class names automatically
+with open("class_indices.json", "r") as f:
+    class_indices = json.load(f)
+
+classes = {v: k for k, v in class_indices.items()}
+
+print("✅ Model Loaded Successfully")
+print(classes)
+
+# ---------------- HOME ---------------- #
 
 @app.route("/")
 def home():
-    return "Mango Disease Backend Running Successfully"
+    return jsonify({
+        "message": "Mango Disease Backend Running Successfully"
+    })
 
-from tensorflow.keras.models import load_model
-
-model = load_model("mango_leaf_disease_model.keras")
-
-
-# Classes
-classes = {
-    0: "Anthracnose",
-    1: "Bacterial Canker",
-    2: "Cutting Weevil",
-    3: "Die Back",
-    4: "Gall Midge",
-    5: "Healthy",
-    6: "Not_Mango",
-    7: "Powdery Mildew",
-    8: "Sooty Mould"
-}
-
+# ---------------- PREDICT ---------------- #
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
+    try:
 
-    file = request.files["image"]
+        if "image" not in request.files:
+            return jsonify({"error": "No image uploaded"}), 400
 
-    img = Image.open(file).convert("RGB")
-    img = img.resize((224, 224))
+        file = request.files["image"]
 
-    img_array = np.array(img, dtype=np.float32) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+        img = Image.open(file).convert("RGB")
+        img = img.resize((224, 224))
 
-    prediction = model.predict(img_array, verbose=0)
+        img = np.array(img).astype("float32") / 255.0
+        img = np.expand_dims(img, axis=0)
 
-    print("=" * 60)
-    print("Prediction Array:", prediction.tolist())
+        prediction = model.predict(img, verbose=0)
 
-    predicted_index = int(np.argmax(prediction))
-    confidence = float(np.max(prediction) * 100)
+        predicted_index = int(np.argmax(prediction))
+        confidence = float(np.max(prediction) * 100)
 
-    print("Predicted Index:", predicted_index)
-    print("Disease:", classes[predicted_index])
-    print("Confidence:", confidence)
-    print("=" * 60)
+        disease = classes[predicted_index]
 
-    return jsonify({
-        "disease": classes[predicted_index],
-        "confidence": round(confidence, 2)
-    })
+        print("=" * 60)
+        print("Disease:", disease)
+        print("Confidence:", confidence)
+        print("=" * 60)
 
-import os
+        return jsonify({
+            "success": True,
+            "disease": disease,
+            "confidence": round(confidence, 2)
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+# ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -39,13 +39,10 @@ export default function Home() {
     try {
   setLoading(true);
 
-  const response = await fetch(
-  "https://mango-leaf-app-7drn.onrender.com/predict",
-  {
-    method: "POST",
-    body: formData,
-  }
-);
+ const response = await fetch("http://localhost:5000/predict", {
+  method: "POST",
+  body: formData,
+});
 
   const data = await response.json();
 

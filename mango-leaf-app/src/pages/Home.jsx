@@ -28,51 +28,51 @@ export default function Home() {
   
   
   const handlePredict = async () => {
-    if (!image) {
-      alert("Please upload an image first");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("image", image);
-
-    try {
-  setLoading(true);
-
- const response = await fetch(
-  "https://mango-leaf-app-7drn.onrender.com/predict",
-  {
-    method: "POST",
-    body: formData,
-  }
-);
-
-  const data = await response.json();
-
-  if (data.disease === "Not_Mango") {
-    setWarning(
-      "⚠️ This does not appear to be a mango leaf. Please upload a clear mango leaf image."
-    );
+  if (!image) {
+    alert("Please upload an image first");
     return;
   }
 
-  setWarning("");
+  const formData = new FormData();
+  formData.append("image", image);
 
-  navigate("/result", {
-    state: {
-      image: preview,
-      disease: data.disease,
-      confidence: data.confidence,
-    },
-  });
+  try {
+    setLoading(true);
 
-} catch (error) {
-  console.log(error);
-  alert("Prediction Failed");
-} finally {
-  setLoading(false);
-}
-}; 
+    const response = await fetch(
+      "https://rim0911-mango-leaf-backend-clean.hf.space/predict",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.disease === "Not_Mango") {
+      setWarning(
+        "⚠️ This does not appear to be a mango leaf. Please upload a clear mango leaf image."
+      );
+      return;
+    }
+
+    setWarning("");
+
+    navigate("/result", {
+      state: {
+        image: preview,
+        disease: data.disease,
+        confidence: data.confidence,
+      },
+    });
+
+  } catch (error) {
+    console.log(error);
+    alert("Prediction Failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
 
